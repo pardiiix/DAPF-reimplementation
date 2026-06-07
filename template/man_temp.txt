@@ -1,0 +1,56 @@
+{"placeholder": "text_a"} Patient has diagnosis {"mask"}.
+Patient has diagnosis {"mask"}. {"placeholder": "text_a"}
+{"placeholder": "text_a"} This is participant's  {"meta": "domain"}. Participant has diagnosis {"mask"}.
+This is participant's  {"meta": "domain","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+{"placeholder": "text_a"} This is participant's  {"meta": "domain1"}. Participant has diagnosis {"mask"}.
+This is participant's  {"meta": "domain1"}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+{"placeholder": "text_a"} Participant's narration on {"meta": "domain1","shortenable": False}. Patient has diagnosis {"mask"}.
+Participant's narration on {"meta": "domain1"}. {"placeholder": "text_a"} Patient has diagnosis {"mask"}.
+{"placeholder": "text_a"} Participant's narration on {"meta": "domain2"}. Patient has diagnosis {"mask"}.
+Participant's narration on {"meta": "domain2"}. {"placeholder": "text_a"} Patient has diagnosis {"mask"}.
+{"placeholder": "text_a"} Participant's narration on {"meta": "domain1"}. Diagnosis is {"mask"}.
+{"placeholder": "text_a"}  Patient's cognitive score is {"mask"}
+Patient's cognitive score is {"mask"} {"placeholder": "text_a"}
+{"placeholder": "text_a"}  Patient has diagnosis {"meta": "ad"}. Patient's cognitive score is {"mask"}
+Patient has diagnosis {"meta": "ad"}. {"placeholder": "text_a"}   Patient's cognitive score is {"mask"}
+{"placeholder": "text_a"} This is participant's narration on {"meta": "domain1"}. Patient's cognitive score is {"mask"}.
+This is participant's narration on {"meta": "domain1"}. {"placeholder": "text_a"}  Patient's cognitive score is {"mask"}
+{"placeholder": "text_a"} This is participant's response on health and wellbeing. Participant has diagnosis {"mask"}.
+{"placeholder": "text_a"} Patient has diagnosis {"mask"}.
+Patient has diagnosis {"mask"}. {"placeholder": "text_a"}
+Diagnosis is {"mask"}. {"placeholder": "text_a"}
+{"placeholder": "text_a"} Diagnosis is {"mask"}.
+{"placeholder": "text_a"} random word {"mask"}.
+{"mask"}. {"placeholder": "text_a"}.
+{"placeholder": "text_a"}. {"mask"}.
+Diagnosis is {"mask"}. Patient is {"meta": "age"}. {"placeholder": "text_a"}
+{"placeholder": "text_a"} Patient is {"meta": "age"}. Diagnosis is {"mask"}.
+Patient is {"meta": "age"}. Diagnosis is {"mask"}. {"placeholder": "text_a"}
+{"placeholder": "text_a"} Diagnosis is {"mask"}. Patient is {"meta": "age"}.
+Diagnosis is {"mask"}. Speech is {"meta": "fluency"}. {"placeholder": "text_a"}
+{"placeholder": "text_a"} Speech is {"meta": "fluency"}. Diagnosis is {"mask"}.
+Speech is {"meta": "fluency"}. Diagnosis is {"mask"}. {"placeholder": "text_a"}
+{"placeholder": "text_a"} Diagnosis is {"mask"}. Speech is {"meta": "fluency"}.
+{"placeholder": "text_a"} This is participant's response on health and wellbeing. Patient has diagnosis {"mask"}.
+{"placeholder": "text_a"} Participant's narration on {"meta": "domain1"}. based on patient narrative, diagnosis is {"mask"}.
+This is participant's  {"meta": "domain"}.Participant has diagnosis {"mask"}. {"placeholder": "text_a"}
+Participant has diagnosis {"mask"}. This is participant's  {"meta": "domain"}. {"placeholder": "text_a"}
+Participant's narration on {"meta": "domain1"}. Participant has diagnosis {"mask"}. {"placeholder": "text_a"}
+Participant has diagnosis {"mask"}. Participant's narration on {"meta": "domain1","shortenable": False}. {"placeholder": "text_a"}
+Participant's narration on {"meta": "domain2"}. Patient has diagnosis {"mask"}.{"placeholder": "text_a"}
+Patient has diagnosis {"mask"}. Participant's narration on {"meta": "domain2"}.  {"placeholder": "text_a"}
+This is participant's  {"meta": "domain1","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+Participant has diagnosis {"mask"}. {"placeholder": "text_a"} This is participant's  {"meta": "domain1","shortenable": False}.
+Input regarding  {"meta": "domain1","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+Participant has diagnosis {"mask"}. {"placeholder": "text_a"} Input regarding {"meta": "domain1","shortenable": False}.
+This narrative response was collected from the participant when asked to {"meta": "domain1","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+Participant has diagnosis {"mask"}. {"placeholder": "text_a"} This narrative response was collected from the participant when asked to {"meta": "domain1","shortenable": False}.
+This is participant's  {"meta": "domain","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+Participant has diagnosis {"mask"}. {"placeholder": "text_a"} This is participant's  {"meta": "domain","shortenable": False}.
+This is participant's  {"meta": "domain2","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+Participant has diagnosis {"mask"}. {"placeholder": "text_a"} This is participant's  {"meta": "domain2","shortenable": False}.
+Input regarding   {"meta": "domain","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+Participant has diagnosis {"mask"}. {"placeholder": "text_a"} Input regarding  {"meta": "domain","shortenable": False}.
+Input regarding  {"meta": "domain2","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.
+Participant has diagnosis {"mask"}. {"placeholder": "text_a"} Input regarding  {"meta": "domain2","shortenable": False}.
+This is participant's  {"meta": "domain","shortenable": False}. {"placeholder": "text_a"} Participant has diagnosis {"mask"}.

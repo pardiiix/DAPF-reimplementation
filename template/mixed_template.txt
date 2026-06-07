@@ -1,0 +1,34 @@
+{"soft":"patient's response is:"} {"placeholder": "text_a"}  {"mask"}.
+{"placeholder": "text_a"} {"soft":"It was patient's response"} {"mask"}.
+{"soft":"patient's"} narrative on {"meta": "domain","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}.
+{"soft":"patient's"} narrative on {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}.
+{"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}.
+{"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}  {"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}.
+{"soft":"patient's"}  narrative on {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}  {"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}.
+{"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}.
+{"placeholder": "text_a"} {"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain1","shortenable": False} {"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}.
+{"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}.
+{"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}.
+{"soft":"patient's narrative on"} {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}  {"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}.
+{"soft":"patient's"} narrative on {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}.
+{"soft":"patient's"} response is {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient response,"}  {"soft":"diagnosis is"} {"mask"}.
+{"soft":"patient's response is"} {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}  {"soft":"based on patient response,"}  {"soft":"diagnosis is"} {"mask"}.
+{"placeholder": "text_a"} {"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain2","shortenable": False} {"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}.
+{"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain","shortenable": False} {"placeholder": "text_a"}  {"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}.
+{"placeholder": "text_a"} {"soft":"patient's"}  {"soft":"narrative on"} {"meta": "domain","shortenable": False} {"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}.
+{"soft":"patient's response is:"} {"placeholder": "text_a"}  {"mask"}.
+{"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}
+{"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}. {"soft":"patient's"}  narrative on {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}
+{"soft":"based on patient narrative,"}  {"soft"} {"soft"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}
+{"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}
+{"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"mask"}. {"soft":"patient's narrative on"} {"meta": "domain1","shortenable": False} {"placeholder": "text_a"}
+{"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain","shortenable": False} {"placeholder": "text_a"}
+{"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}. {"soft":"patient's"}  narrative on {"meta": "domain","shortenable": False} {"placeholder": "text_a"}
+{"soft":"based on patient narrative,"}  {"soft"} {"soft"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain","shortenable": False} {"placeholder": "text_a"}
+{"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain","shortenable": False} {"placeholder": "text_a"}
+{"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"mask"}. {"soft":"patient's narrative on"} {"meta": "domain","shortenable": False} {"placeholder": "text_a"}
+{"soft":"based on patient narrative,"}  {"soft":"diagnosis is"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}
+{"soft":"patient has"}  {"soft":"diagnosis"} {"mask"}. {"soft":"patient's"}  narrative on {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}
+{"soft":"based on patient narrative,"}  {"soft"} {"soft"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}
+{"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"mask"}. {"soft":"patient's"} {"soft":"narrative on"} {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}
+{"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"soft"} {"mask"}. {"soft":"patient's narrative on"} {"meta": "domain2","shortenable": False} {"placeholder": "text_a"}

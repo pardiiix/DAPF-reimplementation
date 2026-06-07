@@ -1,0 +1,3 @@
+{"placeholder": "text_a"} {"placeholder": "text_b"} {"soft":"This"} topic {"soft":"is about"} {"mask"}.
+{"placeholder": "text_a"} {"placeholder": "text_b"} {"soft":"This"} topic {"soft":"is about"} {"mask"}.
+{"placeholder": "text_a"} {"placeholder": "text_b"} {"soft":"This"} topic {"soft":"is about"} {"mask"}.

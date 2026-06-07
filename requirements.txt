@@ -1,0 +1,23 @@
+openprompt @ git+https://github.com/thunlp/OpenPrompt.git@f6fb080ef755c37c01b7959e7560d007049510e8
+#pip install loguru
+#pip install torch==2.0.1+cu117 torchvision==0.15.2+cu117 -f https://download.pytorch.org/whl/torch_stable.html
+transformers==4.41.2
+tokenizers==0.19.1
+huggingface-hub<0.24
+sentencepiece>=0.2.0
+# scikit-learn>=0.24.2
+tqdm>=4.62.2
+tensorboardX
+nltk
+yacs
+dill
+datasets
+rouge==1.0.0
+pyarrow
+scipy
+accelerate
+torchmetrics
+loguru
+protobuf==3.20.*
+#torch
+#torchvision

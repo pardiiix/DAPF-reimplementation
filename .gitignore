@@ -1,0 +1,50 @@
+# macOS
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.nvenv/
+
+# Logs / outputs
+logs/
+log/
+output/
+outputs/
+runs/
+results/
+tensorboard/
+wandb/
+*.log
+
+# Model files / checkpoints
+model/
+models/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+
+# Data - do not upload clinical/protected datasets
+data/
+ADReSS*/
+CCC*/
+*.csv
+*.tsv
+*.xlsx
+*.jsonl
+
+# Temporary / experiment folders
+latest_tmp_dir/
+terminal_history.txt
+
+# Editor
+.vscode/
