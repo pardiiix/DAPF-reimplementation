@@ -19,5 +19,6 @@ accelerate
 torchmetrics
 loguru
 protobuf==3.20.*
+captum
 #torch
 #torchvision

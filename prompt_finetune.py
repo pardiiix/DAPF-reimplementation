@@ -134,6 +134,7 @@ parser.add_argument(
         type=bool,
         help='Run sensitivity trials - investigating the influence of classifier hidden dimension on performance in frozen plm setting.'
     )
+parser.add_argument("--verbalizer_set", type=str, default="default")
 
 # parser.add_argument(
 #     '--optimized_run',
@@ -625,44 +626,51 @@ elif args.template_type == "ptr":
 elif args.template_type == "mixed":
     print(f"mixed template selected, with id :{args.template_id}")
     mytemplate = MixedTemplate(model=plm, tokenizer=tokenizer).from_file(f"{scriptsbase}/mixed_template.txt", choice=args.template_id)
-# now set verbalizer
-if args.verbalizer_type == "manual" :
-    print(class_labels)
-    # myverbalizer = ManualVerbalizer(tokenizer, classes=class_labels).from_file(f"{scriptsbase}/manual_verbalizer.{scriptformat}", choice=args.verbalizer_id)
-    myverbalizer = ManualVerbalizer(
-        classes = class_labels,
-        label_words = {
-            
-            "dementia": ["dementia","alzheimer's","disfluent","disordered"],
-             "healthy": ["healthy"]
 
+
+else:
+    raise ValueError(f"Unknown template_type: {args.template_type}")
+# set verbalizer
+myverbalizer = None
+
+if args.verbalizer_type == "manual":
+    print(class_labels)
+
+    myverbalizer = ManualVerbalizer(
+        classes=class_labels,
+        label_words={
+            "dementia": ["dementia", "alzheimer's", "disfluent", "disordered"],
+            "healthy": ["healthy"],
         },
-        tokenizer = tokenizer,
+        tokenizer=tokenizer,
     )
+
     print(myverbalizer)
 
 elif args.verbalizer_type == "soft":
-    print(f"soft verbalizer selected!")
-    # myverbalizer = SoftVerbalizer(tokenizer, plm, num_classes=len(class_labels))
-    myverbalizer = SoftVerbalizer(
-            classes = class_labels,
-            label_words = {
-                "dementia": ["dementia"],
-                "healthy": ["healthy"],
-            },
-            tokenizer = tokenizer,
-            model = plm,
-            num_classes = len(class_labels)
-            )
+    print("soft verbalizer selected!")
 
-    # we noticed a bug where soft verbalizer was technically not freezing alongside the PLM - meaning it had considerably greater number of trainable parameters
-    # so if we want to properly freeze the verbalizer plm components as described here: https://github.com/thunlp/OpenPrompt/blob/4ba7cb380e7b42c19d566e9836dce7efdb2cc235/openprompt/prompts/soft_verbalizer.py#L82
-    # we now need to actively set grouped_parameters_1 to requires_grad = False
+    myverbalizer = SoftVerbalizer(
+        classes=class_labels,
+        label_words={
+            "dementia": ["dementia"],
+            "healthy": ["healthy"],
+        },
+        tokenizer=tokenizer,
+        model=plm,
+        num_classes=len(class_labels)
+    )
+
     if args.freeze_verbalizer_plm and freeze_plm:
-        logger.warning(f"We have a soft verbalizer and want to freeze it alongside the PLM!")
-        # now set the grouped_parameters_1 require grad to False
+        logger.warning("We have a soft verbalizer and want to freeze it alongside the PLM!")
         for param in myverbalizer.group_parameters_1:
             param.requires_grad = False
+
+else:
+    raise ValueError(f"Unknown verbalizer_type: {args.verbalizer_type}")
+
+assert myverbalizer is not None, "myverbalizer was not initialized"
+
 if  "ccc" in DATASET or "adress" in DATASET or 'pitt' in DATASET:
     logger.warning(f"Using the following dataset: {DATASET} ")
     # update data_dir
