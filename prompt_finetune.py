@@ -56,7 +56,13 @@ parser.add_argument("--src_data",default = "participant_all_ccc_transcript_cut")
 parser.add_argument("--src_data_mult",default = None)
 parser.add_argument("--trg_data",default = "adress-train_all")
 parser.add_argument("--trg_test_data",default = "adress-test_all")
-parser.add_argument("--get_attention",default = False)
+
+# Interpretability options
+parser.add_argument("--get_attention", action="store_true")
+parser.add_argument("--save_wrapped_inputs", action="store_true")
+parser.add_argument("--save_hidden_states", action="store_true")
+parser.add_argument("--save_attentions", action="store_true")
+
 parser.add_argument("--U",type=float,default = 1.05)
 parser.add_argument("--SOURCE_DOMAINS",default=["health and wellbeing"])
 parser.add_argument("--TARGET_DOMAINS",default=["picture description"])
@@ -104,7 +110,7 @@ parser.add_argument("--gradient_accum_steps", type = int, default = 1)
 # parser.add_argument("--dev_run",action="store_true")
 parser.add_argument("--gpu_num", type=int, default = 0)
 # parser.add_argument("--balance_data", action="store_true") # whether to downsample data to majority class
-parser.add_argument("--ce_class_weights",default="True", action="store_true") # whether to apply class weights to cross entropy loss fn
+parser.add_argument("--ce_class_weights", action="store_true")
 parser.add_argument("--sampler_weights", action="store_true") # apply weights to weighted data sampler
 parser.add_argument("--training_size", type=str, default="full") # or fewshot or zero
 parser.add_argument("--no_ckpt",default=False, type=bool)
@@ -189,18 +195,51 @@ mult=False
 
 if args.src_data_mult is not None:
     mult=True
-    
-from collections import Counter
-from openprompt.data_utils.utils import InputExample
 
-def create_input_example(org_data, include_domain, label_col=adrc_label_col):
+def normalize_label(label):
     """
-    Build OpenPrompt InputExample list + label Counter.
+    Convert dataset labels to the integer format expected by OpenPrompt.
 
-    Key points:
-    - Keep the original filename as the stable ID in meta["filename"] (string)
-    - Use a numeric guid (index) because OpenPrompt will tensorize guid and strings crash
+    Expected mapping:
+        healthy/control -> 0
+        dementia/AD     -> 1
     """
+    label_map = {
+        "healthy": 0,
+        "control": 0,
+        "cn": 0,
+        "normal": 0,
+        "0": 0,
+        0: 0,
+        0.0: 0,
+
+        "dementia": 1,
+        "ad": 1,
+        "alzheimer": 1,
+        "alzheimers": 1,
+        "alzheimer's": 1,
+        "1": 1,
+        1: 1,
+        1.0: 1,
+    }
+
+    if pd.isna(label):
+        return None
+
+    if isinstance(label, str):
+        cleaned = label.strip().lower()
+    else:
+        cleaned = label
+
+    if cleaned not in label_map:
+        raise ValueError(f"Unknown label value: {label}")
+
+    return label_map[cleaned]
+
+
+def create_input_example(org_data, include_domain, label_col='ad'):
+    # include_domain: whether to include domain information.
+    # if > -1, means domain-adaptation experiment; otherwise no domain prompt.
     data_list = []
     label_list = []
 
@@ -210,40 +249,35 @@ def create_input_example(org_data, include_domain, label_col=adrc_label_col):
         org_data = org_data[~org_data[label_col].isna()]
 
     for index, data in org_data.iterrows():
-        # Convert label string to class index (0/1)
-        raw_label = data[label_col]
-        if isinstance(raw_label, str):
-            raw_label_clean = raw_label.strip()
-            label_idx = class_labels.index(raw_label_clean) if raw_label_clean in class_labels else raw_label_clean
-        else:
-            label_idx = raw_label
+        numeric_label = normalize_label(data[label_col])
 
-        # Always keep filename as stable identifier
-        filename = str(data.get("filename", ""))
+        if numeric_label is None:
+            continue
 
         if include_domain > -1:
-            meta = {domain_col: data[domain_col]}
-            meta["filename"] = filename
+            meta = {
+                domain_col: data[domain_col],
+            }
 
             input_example = InputExample(
-                text_a=str(data["text"]),
-                label=label_idx,
+                text_a=data['text'],
+                label=numeric_label,
                 meta=meta,
-                guid=int(index)  # MUST be numeric (OpenPrompt tensorizes guid)
+                guid=data["filename"]
             )
+
         else:
-            meta = {"filename": filename}
             input_example = InputExample(
-                text_a=str(data["text"]),
-                label=label_idx,
-                meta=meta,
-                guid=int(index)  # MUST be numeric
+                text_a=data['text'],
+                label=numeric_label,
+                guid=data["filename"]
             )
 
         data_list.append(input_example)
-        label_list.append(data[label_col])
+        label_list.append(numeric_label)
 
     return data_list, Counter(label_list)
+
 def loading_data_asexample(data_save_dir, sample_size, classes, model, mode='train', validation_dict=None):
     print(mode)
     src_data_file=None
@@ -455,9 +489,18 @@ print('model path')
 print(model_dict[args.model_name])
 
 plm, tokenizer, model_config, WrapperClass = load_plm(args.model, model_dict[args.model_name])
-#plm,tokenizer,model_config_WrapperClass = load_plm(args.model, './model/t5-large/')
-print('ckpoint here')
-print(args.no_ckpt)
+
+# For interpretability: allow the backbone PLM to return hidden states and attention weights.
+
+if args.save_hidden_states:
+    plm.config.output_hidden_states = True
+
+if args.save_attentions or args.get_attention:
+    plm.config.output_attentions = True
+
+if args.save_hidden_states or args.save_attentions or args.get_attention:
+    plm.config.return_dict = True
+
 # edit based on whether or not plm was frozen during training
 # actually want to save the checkpoints and logs in same place now. Becomes a lot easier to manage later
 args.logs_root = args.logs_root.rstrip("/") + "/"
@@ -685,10 +728,7 @@ if  "ccc" in DATASET or "adress" in DATASET or 'pitt' in DATASET:
         #      #adding trg train data
         #     print(src_train_classes_count)
 
-        src_task_class_weights = [
-            src_train_classes_count[class_labels[0]] / src_train_classes_count[class_labels[i]]
-            for i in range(len(class_labels))
-        ]
+        src_task_class_weights = [src_train_classes_count[0]/src_train_classes_count[i] for i in range(len(class_labels))]
 
         if args.trg_data is not None:
             trg_task_class_weights=[]
@@ -751,24 +791,21 @@ if not args.no_tensorboard:
 #             print(temp[key])
 #             print(len(temp[key]))
 
-# are we using cuda and if so which number of device
-# Device selection: CUDA (if available) -> MPS (Apple Silicon) -> CPU
-if args.gpu_num < 0:
-    use_cuda = False
-    cuda_device = torch.device("cpu")
-    print("Using CPU (gpu_num < 0)")
-elif torch.cuda.is_available():
+# Select device safely: CUDA if available, otherwise MPS on Apple Silicon, otherwise CPU.
+if torch.cuda.is_available():
     use_cuda = True
     cuda_device = torch.device(f"cuda:{args.gpu_num}")
     print(f"Using CUDA device: {cuda_device}")
-elif torch.backends.mps.is_available():
+
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
     use_cuda = True
     cuda_device = torch.device("mps")
-    print("Using Apple Silicon GPU (MPS)")
+    print("Using Apple Silicon MPS device")
+
 else:
     use_cuda = False
     cuda_device = torch.device("cpu")
-    print("Using CPU (no GPU available)")
+    print("Using CPU")
 
 # now set the default gpu to this one
 # torch.cuda.set_device(cuda_device)
@@ -1352,35 +1389,179 @@ def train(prompt_model, src_train_data_loader,src_train_data_loader_mult=None,tr
 # ## evaluate
 
 # %%
-def get_attention_weight(attention_scores,text_mask):
-    # Extract attention scores with shape (batch_size, num_heads, sequence_length, sequence_length)
-    # attention_scores = outputs['attentions']
+# def get_attention_weight(attention_scores,text_mask):
+#     # Extract attention scores with shape (batch_size, num_heads, sequence_length, sequence_length)
+#     # attention_scores = outputs['attentions']
 
-    # grab attention from final layer of the model
-    attention = attention_scores[-1]
+#     # grab attention from final layer of the model
+#     attention = attention_scores[-1]
 
-    # this subsets the attention matrix to size `(12, n_query_tokens, n_response_tokens)`
-    # this has to be a for loop because the values of `n_query_tokens` and `n_response_tokens` will be different for different batch items
-    bs = attention.shape[0]
-    extracted_attentions = []
-    for i in range(bs):
-        # q_mask = query_mask[i]
-        t_mask = text_mask[i]
+#     # this subsets the attention matrix to size `(12, n_query_tokens, n_response_tokens)`
+#     # this has to be a for loop because the values of `n_query_tokens` and `n_response_tokens` will be different for different batch items
+#     bs = attention.shape[0]
+#     extracted_attentions = []
+#     for i in range(bs):
+#         # q_mask = query_mask[i]
+#         t_mask = text_mask[i]
 
-        masked_attention = attention[i, :, t_mask, :][:, :, t_mask]
+#         masked_attention = attention[i, :, t_mask, :][:, :, t_mask]
 
-        # extracted_attentions.append(masked_attention)
-        # average over number of heads and query tokens
-        extracted_attentions.append(torch.mean(masked_attention, (0,1)).detach().numpy().flatten())
+#         # extracted_attentions.append(masked_attention)
+#         # average over number of heads and query tokens
+#         extracted_attentions.append(torch.mean(masked_attention, (0,1)).detach().cpu().numpy().flatten())
 
 
-    # grab attention submatrix for first batch item, as an example
-    # extracted_attention = extracted_attentions[0]
+#     # grab attention submatrix for first batch item, as an example
+#     # extracted_attention = extracted_attentions[0]
 
-    # average over number of heads and query tokens
-    # mean_attentions = torch.mean(extracted_attention, (0, 1)).detach().numpy().flatten()
-    return extracted_attentions
+#     # average over number of heads and query tokens
+#     # mean_attentions = torch.mean(extracted_attention, (0, 1)).detach().numpy().flatten()
+#     return extracted_attentions
 
+
+def get_output_field(outputs, field_name):
+    """
+    Safely extract hidden_states or attentions from HuggingFace ModelOutput.
+    Works for dict-like and attribute-like outputs.
+    """
+    if outputs is None:
+        return None
+
+    if hasattr(outputs, field_name):
+        return getattr(outputs, field_name)
+
+    if isinstance(outputs, dict):
+        return outputs.get(field_name, None)
+
+    return None
+
+
+def get_mask_positions(inputs, tokenizer):
+    """
+    Find the [MASK] position for each input in the batch.
+
+    Prefer OpenPrompt's loss_ids if available, because that marks the prediction token.
+    Otherwise fall back to tokenizer.mask_token_id.
+    """
+    input_ids = inputs["input_ids"]
+
+    if "loss_ids" in inputs:
+        loss_ids = inputs["loss_ids"]
+        mask_positions = []
+
+        for i in range(loss_ids.shape[0]):
+            positions = torch.nonzero(loss_ids[i] == 1, as_tuple=False).view(-1)
+            if len(positions) > 0:
+                mask_positions.append(int(positions[0].item()))
+            else:
+                mask_positions.append(0)
+
+        return mask_positions
+
+    mask_token_id = tokenizer.mask_token_id
+    mask_positions = []
+
+    for i in range(input_ids.shape[0]):
+        positions = torch.nonzero(input_ids[i] == mask_token_id, as_tuple=False).view(-1)
+        if len(positions) > 0:
+            mask_positions.append(int(positions[0].item()))
+        else:
+            mask_positions.append(0)
+
+    return mask_positions
+
+
+def extract_hidden_state_summaries(plm_outputs, inputs, tokenizer):
+    """
+    Extract compact hidden-state representations for probing.
+
+    We save:
+    1. final-layer [CLS] vector
+    2. final-layer [MASK] vector
+
+    This is much smaller than saving all layers for all tokens.
+    """
+    hidden_states = get_output_field(plm_outputs, "hidden_states")
+
+    if hidden_states is None:
+        return None, None
+
+    # Final layer hidden states: [batch_size, seq_len, hidden_dim]
+    final_hidden = hidden_states[-1]
+
+    cls_vectors = final_hidden[:, 0, :].detach().cpu()
+
+    mask_positions = get_mask_positions(inputs, tokenizer)
+    mask_vectors = []
+
+    for i, pos in enumerate(mask_positions):
+        mask_vectors.append(final_hidden[i, pos, :].detach().cpu())
+
+    mask_vectors = torch.stack(mask_vectors, dim=0)
+
+    return cls_vectors, mask_vectors
+
+
+def extract_mask_attention(plm_outputs, inputs, tokenizer):
+    """
+    Extract final-layer attention from the [MASK] token to all input tokens.
+
+    Output per sample:
+    vector of length seq_len, averaged across attention heads.
+    """
+    attentions = get_output_field(plm_outputs, "attentions")
+
+    if attentions is None:
+        return None
+
+    # Final layer attention: [batch_size, num_heads, seq_len, seq_len]
+    final_attention = attentions[-1]
+
+    mask_positions = get_mask_positions(inputs, tokenizer)
+    attention_mask = inputs["attention_mask"]
+
+    batch_attention_vectors = []
+
+    for i, pos in enumerate(mask_positions):
+        # Attention from [MASK] query token to all key tokens, averaged over heads
+        attn_vec = final_attention[i, :, pos, :].mean(dim=0)
+
+        # Keep only real tokens, not padding
+        valid_len = int(attention_mask[i].sum().item())
+        attn_vec = attn_vec[:valid_len].detach().cpu()
+
+        batch_attention_vectors.append(attn_vec)
+
+    return batch_attention_vectors
+
+def save_interpretability_tensors(
+    save_dir,
+    file_prefix,
+    allids,
+    all_cls_hidden_states,
+    all_mask_hidden_states,
+    all_mask_attentions
+):
+    """
+    Save hidden states and attention summaries separately from CSV metrics.
+    """
+    save_obj = {
+        "ids": allids,
+    }
+
+    if len(all_cls_hidden_states) > 0:
+        save_obj["cls_hidden_states"] = torch.cat(all_cls_hidden_states, dim=0)
+
+    if len(all_mask_hidden_states) > 0:
+        save_obj["mask_hidden_states"] = torch.cat(all_mask_hidden_states, dim=0)
+
+    if len(all_mask_attentions) > 0:
+        # Variable-length attention vectors because sequences may have different valid lengths.
+        # Keep them as a list.
+        save_obj["mask_attentions"] = all_mask_attentions
+
+    if len(save_obj.keys()) > 1:
+        torch.save(save_obj, os.path.join(save_dir, f"{file_prefix}_interpretability.pt"))
 
 
 def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class_labels, epoch=None):
@@ -1390,24 +1571,66 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
     tot_loss = 0
     allpreds = []
     alllabels = []
-    #record logits from the the model
-    alllogits = []
-    # store probabilties i.e. softmax applied to logits
-    allscores = []
-
+    alllogits = []     #record logits from the the model
+    allscores = []    # store probabilties i.e. softmax applied to logits
     allids = []
-    attentions=[]
+
+    all_input_ids = []
+    all_attention_masks = []
+
+    all_cls_hidden_states = []
+    all_mask_hidden_states = []
+    all_mask_attentions = []
+
+    captured_plm_outputs = {}
+
+    hook_handle = None
+
+    if args.save_hidden_states or args.save_attentions or args.get_attention:
+        def capture_plm_outputs(module, module_inputs, module_outputs):
+            captured_plm_outputs["outputs"] = module_outputs
+
+        hook_handle = prompt_model.plm.register_forward_hook(capture_plm_outputs)
+
     with torch.no_grad():
         for step, inputs in enumerate(dataloader):
+
             if use_cuda:
                 inputs = inputs.to(cuda_device)
+
+            if args.save_wrapped_inputs:
+                all_input_ids.extend(inputs["input_ids"].detach().cpu().tolist())
+                all_attention_masks.extend(inputs["attention_mask"].detach().cpu().tolist())
+
             logits = prompt_model(inputs)
+
+            plm_outputs = captured_plm_outputs.get("outputs", None)
+
+            if args.save_hidden_states:
+                cls_vecs, mask_vecs = extract_hidden_state_summaries(
+                    plm_outputs=plm_outputs,
+                    inputs=inputs,
+                    tokenizer=tokenizer
+                )
+
+                if cls_vecs is not None:
+                    all_cls_hidden_states.append(cls_vecs)
+
+                if mask_vecs is not None:
+                    all_mask_hidden_states.append(mask_vecs)
+
+            if args.save_attentions or args.get_attention:
+                mask_attention = extract_mask_attention(
+                    plm_outputs=plm_outputs,
+                    inputs=inputs,
+                    tokenizer=tokenizer
+                )
+
+                if mask_attention is not None:
+                    all_mask_attentions.extend(mask_attention)
+
+
             labels = inputs['label']
-            if args.get_attention:
-                #to get the attention weights
-                attention_scores = logits['attentions']
-                text_mask = (inputs['attention_mask'] == 1)
-                attentions.append(get_attention_weight(logits,text_mask))
             labels = labels.to(torch.int64)
             loss = loss_func(logits, labels)
             tot_loss += loss.item()
@@ -1430,6 +1653,8 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
             # add predicted labels    
             allpreds.extend(torch.argmax(logits, dim=-1).cpu().tolist())
 
+    if hook_handle is not None:
+        hook_handle.remove()
     
     val_loss = tot_loss/len(dataloader)    
     # get sklearn based metrics
@@ -1461,7 +1686,12 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
     # below makes a slightly nicer plot 
     # if not args.crossvalidation:
     #     cm_figure = plot_confusion_matrix(cm, class_labels)
-    epoch_dir = os.path.join(ckpt_dir, "epoch{}".format(epoch))
+    if epoch is not None:
+        epoch_dir = os.path.join(ckpt_dir, "epoch{}".format(epoch))
+        if not os.path.exists(epoch_dir):
+            os.makedirs(epoch_dir)
+    else:
+        epoch_dir = ckpt_dir
     if not os.path.exists(epoch_dir):
         os.makedirs(epoch_dir)
     # if we are doing final evaluation on test data - save labels, pred_labels, logits and some plots
@@ -1502,9 +1732,20 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
         results_dict['pred_labels'] = allpreds
         results_dict['logits'] = alllogits
         results_dict['probas'] = allscores
+        if args.save_wrapped_inputs:
+            results_dict["input_ids"] = all_input_ids
+            results_dict["attention_mask"] = all_attention_masks
         # save dataframe and to csv
         pd.DataFrame(results_dict).to_csv(os.path.join(epoch_dir, test_results_name), index =False)
-    
+        save_interpretability_tensors(
+            save_dir=epoch_dir,
+            file_prefix=test_results_name.replace(".csv", ""),
+            allids=allids,
+            all_cls_hidden_states=all_cls_hidden_states,
+            all_mask_hidden_states=all_mask_hidden_states,
+            all_mask_attentions=all_mask_attentions
+        )
+
     if mode == 'last':
     
         # create empty dict to store labels, pred_labels, logits
@@ -1523,9 +1764,7 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
             test_report_name = "test_class_report_last.csv"
             test_results_name = "test_results_last.csv"
             figure_name = "test_cm_last.png"
-        test_report_df.to_csv(os.path.join(ckpt_dir, test_report_name), index = False)
-        
-        # save logits etc
+        test_report_df.to_csv(os.path.join(ckpt_dir, test_report_name), index=False)               
         
         results_dict = {}
         results_dict['id'] = allids
@@ -1533,9 +1772,19 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
         results_dict['pred_labels'] = allpreds
         results_dict['logits'] = alllogits
         results_dict['probas'] = allscores
+        if args.save_wrapped_inputs:
+            results_dict["input_ids"] = all_input_ids
+            results_dict["attention_mask"] = all_attention_masks
         # save dataframe and to csv
         pd.DataFrame(results_dict).to_csv(os.path.join(ckpt_dir, test_results_name), index =False)
-
+        save_interpretability_tensors(
+            save_dir=ckpt_dir,
+            file_prefix=test_results_name.replace(".csv", ""),
+            allids=allids,
+            all_cls_hidden_states=all_cls_hidden_states,
+            all_mask_hidden_states=all_mask_hidden_states,
+            all_mask_attentions=all_mask_attentions
+        )     
         # # save confusion matrix
         # if not args.crossvalidation:
         #     cm_figure.savefig(os.path.join(ckpt_dir, figure_name))
@@ -1591,9 +1840,19 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
         results_dict['pred_labels'] = allpreds
         results_dict['logits'] = alllogits
         results_dict['probas'] = allscores
-        # save dataframe and to csv
-        pd.DataFrame(results_dict).to_csv(os.path.join(epoch_dir, test_results_name), index =False)
-
+        if args.save_wrapped_inputs:
+            results_dict["input_ids"] = all_input_ids
+            results_dict["attention_mask"] = all_attention_masks
+        pd.DataFrame(results_dict).to_csv(os.path.join(epoch_dir, test_results_name), index=False)
+        # save tensors
+        save_interpretability_tensors(
+            save_dir=epoch_dir,
+            file_prefix=test_results_name.replace(".csv", ""),
+            allids=allids,
+            all_cls_hidden_states=all_cls_hidden_states,
+            all_mask_hidden_states=all_mask_hidden_states,
+            all_mask_attentions=all_mask_attentions
+        )
         if args.last_ckpt:
             if not args.crossvalidation:
                 torch.save(prompt_model.state_dict(),os.path.join(epoch_dir, "checkpoint.ckpt"))
