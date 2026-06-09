@@ -502,3 +502,17 @@ These steps are important before treating the results as publication-ready.
 
 
 
+To run multiseeds:
+```
+chmod +x scripts/run_multiseed_pipeline.sh
+bash scripts/run_multiseed_pipeline.sh
+```
+
+After training is completed, need to run the separate summarization script:
+```
+python -m interpretability.summarize_multiseed \
+  --train_root ./output_multiseed \
+  --interp_root ./output_interpretability_multiseed \
+  --output_dir ./output_interpretability_multiseed_summary_seed01 \
+  --seeds 0,1
+```
