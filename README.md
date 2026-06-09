@@ -505,7 +505,7 @@ These steps are important before treating the results as publication-ready.
 To run multiseeds:
 ```
 chmod +x scripts/run_multiseed_pipeline.sh
-bash scripts/run_multiseed_pipeline.sh
+nohup bash scripts/run_multiseed_pipeline.sh 
 ```
 
 After training is completed, need to run the separate summarization script:
