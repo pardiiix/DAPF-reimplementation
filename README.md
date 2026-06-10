@@ -516,3 +516,13 @@ python -m interpretability.summarize_multiseed \
   --output_dir ./output_interpretability_multiseed_summary_seed01 \
   --seeds 0,1,2,3,4
 ```
+
+To run visualizations, find the seed closest to the average F1 score, and run for that seed:
+
+```
+python -m interpretability.visualize_representations \
+  --results_csv ./output_multiseed/seed_0/bert-base-uncased_tempmanual7_verbmanual_epoch10_optimadamw_stk16_100_domain2_bs4_prlr0.5_joint_cvFalse/version_0/checkpoints/epoch-1/test_results.csv \
+  --interpretability_pt ./output_multiseed/seed_0/bert-base-uncased_tempmanual7_verbmanual_epoch10_optimadamw_stk16_100_domain2_bs4_prlr0.5_joint_cvFalse/version_0/checkpoints/epoch-1/test_results_interpretability.pt \
+  --output_dir ./output_interpretability_multiseed/seed_0/representation_visualizations \
+  --seed 0
+```
