@@ -514,5 +514,5 @@ python -m interpretability.summarize_multiseed \
   --train_root ./output_multiseed \
   --interp_root ./output_interpretability_multiseed \
   --output_dir ./output_interpretability_multiseed_summary_seed01 \
-  --seeds 0,1
+  --seeds 0,1,2,3,4
 ```
