@@ -517,6 +517,31 @@ python -m interpretability.summarize_multiseed \
   --seeds 0,1,2,3,4
 ```
 
+Layer-wise Representation Probing:
+```
+for SEED in 0 1 2 3 4; do
+  CHECKPOINT_DIR=$(find ./output_multiseed/seed_${SEED} -type d -path "*/checkpoints" | sort | tail -n 1)
+
+  python -m interpretability.run_layerwise_probing \
+    --project_root ./ \
+    --off_line_model_dir ./model \
+    --model bert \
+    --model_name bert-base-uncased \
+    --template_id 7 \
+    --checkpoint "${CHECKPOINT_DIR}/best-checkpoint.ckpt" \
+    --results_csv "${CHECKPOINT_DIR}/epoch-1/test_results.csv" \
+    --output_dir "./output_interpretability_multiseed/seed_${SEED}/layerwise_probing" \
+    --batch_size 8
+done
+```
+Then summarize:
+```
+python -m interpretability.summarize_layerwise_probing \
+  --interp_root ./output_interpretability_multiseed \
+  --output_dir ./output_interpretability_multiseed_summary/layerwise_probing \
+  --seeds 0,1,2,3,4
+```
+
 To run visualizations, find the seed closest to the average F1 score, and run for that seed:
 
 ```
