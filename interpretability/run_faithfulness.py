@@ -30,20 +30,33 @@ def parse_list_column(value):
     return ast.literal_eval(value)
 
 
-def build_loss_ids(input_ids, tokenizer):
+def build_loss_ids_from_position(input_ids, mask_position):
     loss_ids = torch.zeros_like(input_ids)
 
+    if mask_position < 0 or mask_position >= input_ids.shape[1]:
+        raise ValueError(
+            f"Invalid mask_position={mask_position} for sequence length {input_ids.shape[1]}"
+        )
+
+    loss_ids[:, mask_position] = 1
+    return loss_ids
+
+
+def find_original_prediction_mask_position(input_ids_list, tokenizer):
     mask_token_id = tokenizer.mask_token_id
+
     if mask_token_id is None:
         raise ValueError("Tokenizer has no mask_token_id.")
 
-    for i in range(input_ids.shape[0]):
-        positions = torch.nonzero(input_ids[i] == mask_token_id, as_tuple=False).view(-1)
-        if len(positions) == 0:
-            raise ValueError(f"No [MASK] token found in sample {i}.")
-        loss_ids[i, positions[0]] = 1
+    positions = [i for i, token_id in enumerate(input_ids_list) if int(token_id) == int(mask_token_id)]
 
-    return loss_ids
+    if len(positions) == 0:
+        raise ValueError("No original [MASK] token found in input_ids.")
+
+    # In the DAPF template, the diagnosis [MASK] occurs after the transcript:
+    # "Patient has diagnosis [MASK]."
+    # Use the last [MASK] in the original prompt-wrapped input.
+    return int(positions[-1])
 
 
 def load_prompt_model(args, device):
@@ -88,10 +101,20 @@ def load_prompt_model(args, device):
     return prompt_model, tokenizer
 
 
-def predict_dementia_probability(prompt_model, tokenizer, input_ids_list, attention_mask_list, device):
+def predict_dementia_probability(
+    prompt_model,
+    input_ids_list,
+    attention_mask_list,
+    diagnosis_mask_position,
+    device,
+):
     input_ids = torch.tensor([input_ids_list], dtype=torch.long).to(device)
     attention_mask = torch.tensor([attention_mask_list], dtype=torch.long).to(device)
-    loss_ids = build_loss_ids(input_ids, tokenizer).to(device)
+
+    loss_ids = build_loss_ids_from_position(
+        input_ids=input_ids,
+        mask_position=diagnosis_mask_position,
+    ).to(device)
 
     batch = {
         "input_ids": input_ids,
@@ -107,7 +130,6 @@ def predict_dementia_probability(prompt_model, tokenizer, input_ids_list, attent
         probs = torch.softmax(logits, dim=-1)
 
     return float(probs[0, 1].detach().cpu().item())
-
 
 def get_ranked_positions(attr_df_for_sample, ranking="positive"):
     """
@@ -146,6 +168,7 @@ def deletion_curve_for_sample(
     input_ids_list,
     attention_mask_list,
     ranked_positions,
+    diagnosis_mask_position,
     device,
     steps,
 ):
@@ -159,11 +182,11 @@ def deletion_curve_for_sample(
     rows = []
 
     original_prob = predict_dementia_probability(
-        prompt_model,
-        tokenizer,
-        input_ids_list,
-        attention_mask_list,
-        device,
+        prompt_model=prompt_model,
+        input_ids_list=input_ids_list,
+        attention_mask_list=attention_mask_list,
+        diagnosis_mask_position=diagnosis_mask_position,
+        device=device,
     )
 
     n_positions = len(ranked_positions)
@@ -184,11 +207,11 @@ def deletion_curve_for_sample(
                 perturbed_ids[pos] = mask_token_id
 
         perturbed_prob = predict_dementia_probability(
-            prompt_model,
-            tokenizer,
-            perturbed_ids,
-            attention_mask_list,
-            device,
+            prompt_model=prompt_model,
+            input_ids_list=perturbed_ids,
+            attention_mask_list=attention_mask_list,
+            diagnosis_mask_position=diagnosis_mask_position,
+            device=device,
         )
 
         rows.append({
@@ -211,6 +234,7 @@ def insertion_curve_for_sample(
     attention_mask_list,
     ranked_positions,
     all_reportable_positions,
+    diagnosis_mask_position,
     device,
     steps,
 ):
@@ -222,11 +246,11 @@ def insertion_curve_for_sample(
     rows = []
 
     original_prob = predict_dementia_probability(
-        prompt_model,
-        tokenizer,
-        input_ids_list,
-        attention_mask_list,
-        device,
+        prompt_model=prompt_model,
+        input_ids_list=input_ids_list,
+        attention_mask_list=attention_mask_list,
+        diagnosis_mask_position=diagnosis_mask_position,
+        device=device,
     )
 
     n_positions = len(ranked_positions)
@@ -244,11 +268,11 @@ def insertion_curve_for_sample(
             baseline_ids[pos] = mask_token_id
 
     baseline_prob = predict_dementia_probability(
-        prompt_model,
-        tokenizer,
-        baseline_ids,
-        attention_mask_list,
-        device,
+        prompt_model=prompt_model,
+        input_ids_list=baseline_ids,
+        attention_mask_list=attention_mask_list,
+        diagnosis_mask_position=diagnosis_mask_position,
+        device=device,
     )
 
     for frac in steps:
@@ -262,11 +286,11 @@ def insertion_curve_for_sample(
                 perturbed_ids[pos] = input_ids_list[pos]
 
         perturbed_prob = predict_dementia_probability(
-            prompt_model,
-            tokenizer,
-            perturbed_ids,
-            attention_mask_list,
-            device,
+            prompt_model=prompt_model,
+            input_ids_list=perturbed_ids,
+            attention_mask_list=attention_mask_list,
+            diagnosis_mask_position=diagnosis_mask_position,
+            device=device,
         )
 
         rows.append({
@@ -340,6 +364,11 @@ def run_faithfulness(args):
         input_ids_list = parse_list_column(row["input_ids"])
         attention_mask_list = parse_list_column(row["attention_mask"])
 
+        diagnosis_mask_position = find_original_prediction_mask_position(
+            input_ids_list=input_ids_list,
+            tokenizer=tokenizer,
+        )
+
         sample_attr = attr_df[attr_df["id"] == sample_id].copy()
 
         if sample_attr.empty:
@@ -361,6 +390,7 @@ def run_faithfulness(args):
             input_ids_list=input_ids_list,
             attention_mask_list=attention_mask_list,
             ranked_positions=ranked_positions,
+            diagnosis_mask_position=diagnosis_mask_position,
             device=device,
             steps=steps,
         )
@@ -381,6 +411,7 @@ def run_faithfulness(args):
             attention_mask_list=attention_mask_list,
             ranked_positions=ranked_positions,
             all_reportable_positions=all_reportable_positions,
+            diagnosis_mask_position=diagnosis_mask_position,
             device=device,
             steps=steps,
         )
