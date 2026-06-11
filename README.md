@@ -517,6 +517,17 @@ python -m interpretability.summarize_multiseed \
   --seeds 0,1,2,3,4
 ```
 
+Aggregated attribution run:
+```
+python -m interpretability.run_attribution_aggregated \
+  --interp_root ./output_interpretability_multiseed \
+  --output_dir ./output_interpretability_multiseed_summary/attribution_aggregated \
+  --seeds 0,1,2,3,4 \
+  --min_count 10 \
+  --min_samples 5 \
+  --loose_min_count 5 \
+  --loose_min_samples 3
+```
 Layer-wise Representation Probing:
 ```
 for SEED in 0 1 2 3 4; do
