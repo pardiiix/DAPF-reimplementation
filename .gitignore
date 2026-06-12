@@ -48,3 +48,12 @@ terminal_history.txt
 
 # Editor
 .vscode/
+# Experiment outputs
+output_multiseed/
+output_interpretability_multiseed/
+output_interpretability_multiseed_summary/
+output_verbalizer_sensitivity/
+output_interpretability_verbalizer_sensitivity/
+output_verbalizer_sensitivity_summary/
+nohup.out
+*.out
