@@ -57,3 +57,13 @@ output_interpretability_verbalizer_sensitivity/
 output_verbalizer_sensitivity_summary/
 nohup.out
 *.out
+
+# BERT-CLS baseline outputs
+output_bert_cls_multiseed/
+output_bert_cls_interpretability_multiseed/
+output_bert_cls_interpretability_multiseed_summary/
+
+# BERT-CLS+Prompt baseline outputs
+output_bert_cls_prompt_multiseed/
+output_bert_cls_prompt_interpretability_multiseed/
+output_bert_cls_prompt_interpretability_multiseed_summary/
