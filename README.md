@@ -562,3 +562,11 @@ python -m interpretability.visualize_representations \
   --output_dir ./output_interpretability_multiseed/seed_0/representation_visualizations \
   --seed 0
 ```
+## Experimental branches
+
+Additional baselines are maintained on separate branches:
+
+- `bert-cls-baseline`: standard BERT sequence-classification baseline under the same CCC → ADReSS data regime.
+- `bert-cls-prompt-baseline`: prompt-as-input BERT sequence-classification ablation.
+
+Switch to the corresponding branch before running branch-specific scripts.
