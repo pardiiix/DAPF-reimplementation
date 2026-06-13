@@ -562,3 +562,13 @@ python -m interpretability.visualize_representations \
   --output_dir ./output_interpretability_multiseed/seed_0/representation_visualizations \
   --seed 0
 ```
+
+## BERT-CLS baseline branch
+
+This branch adds a standard BERT sequence-classification baseline trained under the same CCC → ADReSS data regime as DAPF.
+
+Run:
+
+```bash
+chmod +x scripts/run_bert_cls_multiseed_full_pipeline.sh
+bash scripts/run_bert_cls_multiseed_full_pipeline.sh
