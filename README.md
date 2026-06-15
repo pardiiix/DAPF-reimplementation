@@ -570,3 +570,21 @@ Additional baselines are maintained on separate branches:
 - `bert-cls-prompt-baseline`: prompt-as-input BERT sequence-classification ablation.
 
 Switch to the corresponding branch before running branch-specific scripts.
+
+To run the bert-cls-prompt interpretability run:
+```
+chmod +x scripts/run_bert_cls_prompt_multiseed_full_pipeline.sh                         
+bash scripts/run_bert_cls_prompt_multiseed_full_pipeline.sh
+```
+
+To run the attribution analysis without the prompt tokens:
+```
+python -m baselines.run_attribution_aggregated_exclude_tokens \
+  --interp_root ./output_bert_cls_prompt_interpretability_multiseed \
+  --output_dir ./output_bert_cls_prompt_interpretability_multiseed_summary/attribution_aggregated_no_prompt_tokens \
+  --seeds 0,1,2,3,4 \
+  --min_count 10 \
+  --min_samples 5 \
+  --loose_min_count 5 \
+  --loose_min_samples 3
+  ```
