@@ -570,3 +570,15 @@ Additional baselines are maintained on separate branches:
 - `bert-cls-prompt-baseline`: prompt-as-input BERT sequence-classification ablation.
 
 Switch to the corresponding branch before running branch-specific scripts.
+
+After the two branches and experiments are run and completed, run paired error analysis on the results in `paired-error-analysis` branch
+using epoch 1 since that was the closest in my case to the mean results. Feel free to change the dapf pattern if different in your case
+```
+python -m baselines.run_paired_error_analysis_three_models \
+  --dapf_root ./output_multiseed \
+  --dapf_pattern 'seed_{seed}/bert-base-uncased_tempmanual7_verbmanual_epoch10_optimadamw_stk16_100_domain2_bs4_prlr0.5_joint_cvFalse/version_{seed}/checkpoints/epoch-1/test_results.csv' \
+  --bert_cls_root ./output_bert_cls_multiseed \
+  --bert_cls_prompt_root ./output_bert_cls_prompt_multiseed \
+  --output_dir ./paired_error_analysis \
+  --seeds 0,1,2,3,4
+  ```
