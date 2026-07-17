@@ -582,3 +582,17 @@ python -m baselines.run_paired_error_analysis_three_models \
   --output_dir ./paired_error_analysis \
   --seeds 0,1,2,3,4
   ```
+
+  Later added:
+
+  To run the random label control test:
+  ```
+  (.venv) pardisranjbar@Pardiss-MBP DAPF-main % for SEED in 0 1 2 3 4; do                        
+  CHECKPOINT_DIR=$(find ./output_multiseed/seed_${SEED} -type d -path "*/checkpoints" | sort | tail -n 1)
+
+  python -m interpretability.run_interpretability \
+    --results_csv "${CHECKPOINT_DIR}/epoch-1/test_results.csv" \
+    --interpretability_pt "${CHECKPOINT_DIR}/epoch-1/test_results_interpretability.pt" \
+    --output_dir "./output_interpretability_multiseed_randomlabel/seed_${SEED}"
+done
+```

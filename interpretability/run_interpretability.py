@@ -16,7 +16,7 @@ from sklearn.metrics import (
 )
 
 from interpretability.metrics import expected_calibration_error
-from interpretability.probing import run_linear_probe
+from interpretability.probing import run_linear_probe, run_random_label_probe
 
 
 def parse_args():
@@ -95,32 +95,94 @@ def run_representation_probes(df, interp_obj, output_dir):
 
     if "cls_hidden_states" in interp_obj:
         X_cls = interp_obj["cls_hidden_states"].detach().cpu().numpy()
-        cls_probe = run_linear_probe(X_cls, y_true, scoring="f1_macro")
+
+        # Original diagnosis probe
+        cls_probe = run_linear_probe(
+            X_cls,
+            y_true,
+            scoring="f1_macro",
+        )
 
         probe_rows.append({
             "representation": "cls_hidden_states",
             "target": "diagnosis",
             "score_mean": cls_probe["mean"],
             "score_std": cls_probe["std"],
+            "ci_95_low": np.nan,
+            "ci_95_high": np.nan,
+            "n_repeats": np.nan,
             "scores": json.dumps(cls_probe["scores"]),
+        })
+
+        # New random-label control
+        cls_random_probe = run_random_label_probe(
+            X_cls,
+            y_true,
+            n_repeats=100,
+            random_seed=42,
+        )
+
+        probe_rows.append({
+            "representation": "cls_hidden_states",
+            "target": "random_labels",
+            "score_mean": cls_random_probe["mean_macro_f1"],
+            "score_std": cls_random_probe["std_macro_f1"],
+            "ci_95_low": cls_random_probe["ci_95_low"],
+            "ci_95_high": cls_random_probe["ci_95_high"],
+            "n_repeats": cls_random_probe["n_valid_repeats"],
+            "scores": json.dumps(cls_random_probe["all_scores"]),
         })
 
     if "mask_hidden_states" in interp_obj:
         X_mask = interp_obj["mask_hidden_states"].detach().cpu().numpy()
-        mask_probe = run_linear_probe(X_mask, y_true, scoring="f1_macro")
+
+        # Original diagnosis probe
+        mask_probe = run_linear_probe(
+            X_mask,
+            y_true,
+            scoring="f1_macro",
+        )
 
         probe_rows.append({
             "representation": "mask_hidden_states",
             "target": "diagnosis",
             "score_mean": mask_probe["mean"],
             "score_std": mask_probe["std"],
+            "ci_95_low": np.nan,
+            "ci_95_high": np.nan,
+            "n_repeats": np.nan,
             "scores": json.dumps(mask_probe["scores"]),
+        })
+
+        # New random-label control
+        mask_random_probe = run_random_label_probe(
+            X_mask,
+            y_true,
+            n_repeats=100,
+            random_seed=42,
+        )
+
+        probe_rows.append({
+            "representation": "mask_hidden_states",
+            "target": "random_labels",
+            "score_mean": mask_random_probe["mean_macro_f1"],
+            "score_std": mask_random_probe["std_macro_f1"],
+            "ci_95_low": mask_random_probe["ci_95_low"],
+            "ci_95_high": mask_random_probe["ci_95_high"],
+            "n_repeats": mask_random_probe["n_valid_repeats"],
+            "scores": json.dumps(mask_random_probe["all_scores"]),
         })
 
     if probe_rows:
         probe_df = pd.DataFrame(probe_rows)
-        probe_df.to_csv(os.path.join(output_dir, "representation_probe_results.csv"), index=False)
 
+        probe_df.to_csv(
+            os.path.join(
+                output_dir,
+                "representation_probe_results.csv",
+            ),
+            index=False,
+        )
 
 def main():
     args = parse_args()
