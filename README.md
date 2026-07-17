@@ -582,7 +582,14 @@ python -m baselines.run_paired_error_analysis_three_models \
   --output_dir ./paired_error_analysis \
   --seeds 0,1,2,3,4
   ```
-  To run statistical significance:
+  To run statistical significance for this null hypthesis:
+
+  "There is no evidence that the prompt prediction position encodes more diagnosis information than the [CLS] representation."
+
+  In our case:
+  An exact one-sided Wilcoxon signed-rank test rejected the null hypothesis that the median paired difference was less than or equal to zero (p = 0.031), indicating consistently higher probing performance for [MASK] across all five seeds.
+  
+  Run:
   ```
   python analysis/test_table6_probing.py \
   --interp_root ./output_interpretability_multiseed \
