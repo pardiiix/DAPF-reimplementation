@@ -582,3 +582,13 @@ python -m baselines.run_paired_error_analysis_three_models \
   --output_dir ./paired_error_analysis \
   --seeds 0,1,2,3,4
   ```
+  To run statistical significance:
+  ```
+  python analysis/test_table6_probing.py \
+  --interp_root ./output_interpretability_multiseed \
+  --pattern 'seed_{seed}/representation_probe_results.csv' \
+  --seeds 0,1,2,3,4 \
+  --a mask_hidden_states \
+  --b cls_hidden_states \
+  --output_dir ./table6_probing_significance
+  ```
