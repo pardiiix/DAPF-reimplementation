@@ -38,6 +38,8 @@ from collections import Counter
 
 import os 
 import sys
+
+from interpretability.partition_shap import run_partition_shap
 # # Kill all processes on GPU 6 and 7
 # os.system("""kill $(nvidia-smi | awk '$5=="PID" {p=1} p && $2 >= 6 && $2 < 7 {print $5}')""")
 
@@ -126,7 +128,39 @@ parser.add_argument("--pause_threshold", type=str)
 parser.add_argument("--transcription", type=str, default='chas')
 parser.add_argument("--asr_format", type=int, default=3)
 parser.add_argument("--adrc_label_col", type=int, default=0)
+parser.add_argument(
+    "--run_partition_shap",
+    action="store_true",
+    help="Run Partition SHAP after loading the selected checkpoint.",
+)
 
+parser.add_argument(
+    "--shap_max_samples",
+    type=int,
+    default=None,
+    help="Optional number of test transcripts to explain.",
+)
+
+parser.add_argument(
+    "--shap_max_evals",
+    type=int,
+    default=500,
+    help="Maximum SHAP evaluations per transcript.",
+)
+
+parser.add_argument(
+    "--shap_batch_size",
+    type=int,
+    default=8,
+    help="Model inference batch size used by SHAP.",
+)
+
+parser.add_argument(
+    "--shap_output_dir",
+    type=str,
+    default=None,
+    help="Optional Partition SHAP output directory.",
+)
 
 parser.add_argument(
         '--sensitivity',
@@ -1870,6 +1904,205 @@ def evaluate(prompt_model, dataloader, mode = "validation", class_labels = class
     return val_loss, acc, prec_weighted, prec_macro, recall_weighted, recall_macro, f1_weighted, f1_macro, roc_auc_weighted, roc_auc_macro
 
 
+
+def make_dapf_shap_predictor(
+    *,
+    prompt_model,
+    tokenizer,
+    template,
+    wrapper_class,
+    domain_name,
+    domain_value,
+    device,
+    batch_size=8,
+    max_seq_length=512,
+):
+    """
+    Return a SHAP-compatible prediction function.
+
+    Input:
+        list of masked or unmasked transcript strings
+
+    Output:
+        array of shape (n_examples, 2), ordered as:
+        column 0 = healthy
+        column 1 = dementia
+    """
+
+    prompt_model.eval()
+
+    def predict_proba(transcripts):
+        examples = []
+
+        for index, transcript in enumerate(transcripts):
+            examples.append(
+                InputExample(
+                    guid=index,
+                    text_a=str(transcript),
+                    label=0,
+                    meta={
+                        domain_name: domain_value,
+                        "filename": f"shap_{index}",
+                    },
+                )
+            )
+
+        shap_loader = PromptDataLoader(
+            dataset=examples,
+            tokenizer=tokenizer,
+            template=template,
+            tokenizer_wrapper_class=wrapper_class,
+            max_seq_length=max_seq_length,
+            decoder_max_length=3,
+            batch_size=batch_size,
+            shuffle=False,
+            teacher_forcing=False,
+            predict_eos_token=False,
+            truncate_method="tail",
+        )
+
+        probability_batches = []
+
+        with torch.no_grad():
+            for batch in shap_loader:
+                if device is not None:
+                    batch = batch.to(device)
+
+                # PromptForClassification already applies the verbalizer.
+                logits = prompt_model(batch)
+
+                probabilities = torch.softmax(
+                    logits,
+                    dim=-1,
+                )
+
+                probability_batches.append(
+                    probabilities.detach().cpu().numpy()
+                )
+
+        if not probability_batches:
+            return np.empty((0, 2), dtype=np.float32)
+
+        result = np.concatenate(
+            probability_batches,
+            axis=0,
+        )
+
+        if result.ndim != 2 or result.shape[1] != 2:
+            raise ValueError(
+                "Expected DAPF to return two class probabilities, "
+                f"but received shape {result.shape}."
+            )
+
+        if not np.isfinite(result).all():
+            raise ValueError(
+                "DAPF returned NaN or infinite probabilities."
+            )
+
+        return result
+
+    return predict_proba
+
+def run_dapf_partition_shap(
+    *,
+    prompt_model,
+    test_examples,
+    tokenizer,
+    template,
+    wrapper_class,
+    device,
+    output_dir,
+    max_samples=None,
+    max_evals=500,
+    batch_size=8,
+):
+    """
+    Run Partition SHAP on the DAPF test examples.
+    """
+
+    if not test_examples:
+        raise ValueError("The DAPF test set is empty.")
+
+    # The prompt template expects the metadata field selected by domain_col,
+    # such as domain1 for template 7.
+    if not domain_col:
+        raise ValueError(
+            "domain_col is empty. Partition SHAP requires the same "
+            "domain metadata used by the prompt template."
+        )
+
+    domain_values = {
+        str(example.meta[domain_col])
+        for example in test_examples
+        if example.meta is not None
+        and domain_col in example.meta
+    }
+
+    if len(domain_values) != 1:
+        raise ValueError(
+            "Expected one target-domain value in the test set, "
+            f"but found: {sorted(domain_values)}"
+        )
+
+    domain_value = next(iter(domain_values))
+
+    selected_examples = list(test_examples)
+
+    if max_samples is not None:
+        selected_examples = selected_examples[:max_samples]
+
+    transcripts = [
+        str(example.text_a)
+        for example in selected_examples
+    ]
+
+    labels = [
+        int(example.label)
+        for example in selected_examples
+    ]
+
+    sample_ids = []
+
+    for example in selected_examples:
+        filename = None
+
+        if example.meta is not None:
+            filename = example.meta.get("filename")
+
+        if filename:
+            sample_ids.append(str(filename))
+        else:
+            sample_ids.append(str(example.guid))
+
+    predict_proba = make_dapf_shap_predictor(
+        prompt_model=prompt_model,
+        tokenizer=tokenizer,
+        template=template,
+        wrapper_class=wrapper_class,
+        domain_name=domain_col,
+        domain_value=domain_value,
+        device=device,
+        batch_size=batch_size,
+        max_seq_length=max_seq_l,
+    )
+
+    print("Running DAPF Partition SHAP")
+    print("Domain metadata field:", domain_col)
+    print("Domain metadata value:", domain_value)
+    print("Number of transcripts:", len(selected_examples))
+
+    run_partition_shap(
+        tokenizer=tokenizer,
+        predict_proba=predict_proba,
+        sample_ids=sample_ids,
+        transcripts=transcripts,
+        labels=labels,
+        output_dir=output_dir,
+        max_evals=max_evals,
+        batch_size=batch_size,
+        algorithm="partition",
+    )
+
 # TODO - add a test function to load the best checkpoint and obtain metrics on all test data. Can do this post training but may be nicer to do after training to avoid having to repeat.
 
 def test_evaluation(prompt_model, ckpt_dir, dataloader, epoch_num=None):
@@ -2029,9 +2262,44 @@ if args.run_evaluation:
             acc, prec, recall, f1, auc = test_evaluation(prompt_model, ckpt_dir, trg_validation_data_loader, epoch_num)
         else:
             acc,prec,recall,f1,auc=test_evaluation(prompt_model, ckpt_dir, test_data_loader, epoch_num)
+        
         result=str(args.val_fold_idx)+" "+str(args.seed)+" "+str(acc)+" "+str(prec)+" "+str(recall)+" "+str(f1)+" "+str(auc)+"\n"
         with open(result_dir+"/"+'result_'+adrc_label_col+'.txt', 'a+') as run_write:
             run_write.write(result)
+        if args.run_partition_shap:
+            if args.crossvalidation:
+                shap_examples = trg_dataset["validation"]
+            else:
+                shap_examples = trg_dataset["test"]
+
+            if args.shap_output_dir is not None:
+                shap_output_dir = args.shap_output_dir
+            else:
+                shap_output_dir = os.path.join(
+                    ckpt_dir,
+                    "partition_shap",
+                )
+
+            os.makedirs(
+                shap_output_dir,
+                exist_ok=True,
+            )
+
+            shap_device = cuda_device if use_cuda else None
+
+            run_dapf_partition_shap(
+                prompt_model=prompt_model,
+                test_examples=shap_examples,
+                tokenizer=tokenizer,
+                template=mytemplate,
+                wrapper_class=WrapperClass,
+                device=shap_device,
+                output_dir=shap_output_dir,
+                max_samples=args.shap_max_samples,
+                max_evals=args.shap_max_evals,
+                batch_size=args.shap_batch_size,
+            )
+        
     # last_epoch_evaluation(prompt_model, ckpt_dir, test_data_loader)
 
 # write the contents to file

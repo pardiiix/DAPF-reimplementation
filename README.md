@@ -596,3 +596,37 @@ python -m baselines.run_paired_error_analysis_three_models \
     --output_dir "./output_interpretability_multiseed_randomlabel/seed_${SEED}"
 done
 ```
+
+To run shap:
+
+```
+source .venv/bin/activate
+
+nohup python -u prompt_finetune.py \
+  --project_root ./ \
+  --logs_root ./output_multiseed/seed_0/ \
+  --off_line_model_dir ./model/bert-base-uncased \
+  --data_dir ./data/ \
+  --src_data ccc_train_all \
+  --trg_data adress-train_all \
+  --trg_test_data adress-test_all \
+  --model bert \
+  --model_name bert-base-uncased \
+  --template_type manual \
+  --verbalizer_type manual \
+  --template_id 7 \
+  --meta 2 \
+  --seed 0 \
+  --gpu_num 0 \
+  --batch_size 4 \
+  --trg_batch_size 4 \
+  --num_epochs 10 \
+  --ce_class_weights \
+  --no_tensorboard \
+  --no_training \
+  --run_partition_shap \
+  --shap_max_evals 500 \
+  --shap_batch_size 8 \
+  --shap_output_dir "output_multiseed/seed_0/partition_shap_final" \
+  > output/partition_shap_full_seed0.log 2>&1 &
+```
