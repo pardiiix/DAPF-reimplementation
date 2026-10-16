@@ -58,6 +58,8 @@ def normalize_token(token: object, lowercase: bool = True) -> str:
     # Remove common WordPiece prefix.
     tok = tok.replace("##", "")
 
+    tok = tok.lstrip("Ġ")
+
     # Normalize whitespace.
     tok = re.sub(r"\s+", " ", tok)
 
