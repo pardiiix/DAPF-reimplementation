@@ -55,8 +55,9 @@ def normalize_token(token: object, lowercase: bool = True) -> str:
     """Normalize a token for aggregation."""
     tok = str(token).strip()
 
-    # Remove common WordPiece prefix.
+    # Remove common WordPiece and RoBERTa BPE prefixes.
     tok = tok.replace("##", "")
+    tok = tok.lstrip("Ġ")
 
     # Normalize whitespace.
     tok = re.sub(r"\s+", " ", tok)
