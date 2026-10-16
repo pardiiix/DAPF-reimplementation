@@ -96,6 +96,16 @@ def is_reportable_token(token):
 
     token = token.strip()
 
+    # Exclude RoBERTa special tokens
+    if token in {"<s>", "</s>", "<pad>", "<mask>", "<unk>"}:
+        return False
+
+    # Normalize RoBERTa's leading word-boundary marker
+    token = token.lstrip("Ġ").lower()
+
+    if not token:
+        return False
+
     if token in PROMPT_TOKENS_TO_EXCLUDE:
         return False
 
@@ -265,6 +275,7 @@ def run_layer_integrated_gradients(
             baselines=baseline,
             additional_forward_args=(attention_mask, loss_ids),
             n_steps=n_steps,
+            internal_batch_size=4,
             return_convergence_delta=True,
         )
 

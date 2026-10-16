@@ -302,7 +302,7 @@ def plot_layerwise_results(results_df, output_path):
             alpha=0.18,
         )
 
-    ax.set_xlabel("BERT layer")
+    ax.set_xlabel("Transformer layer")
     ax.set_ylabel("Probe macro-F1")
     ax.set_title("Layer-wise diagnosis probing")
     ax.set_xticks(sorted(results_df["layer"].unique()))
