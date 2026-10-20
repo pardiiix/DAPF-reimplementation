@@ -551,3 +551,125 @@ python -m interpretability.visualize_representations \
   --output_dir ./output_interpretability_multiseed/seed_0/representation_visualizations \
   --seed 0
 ```
+---
+
+## Robustness analysis: cross-architecture probing, attribution, and faithfulness figures
+
+Run the following commands **from the `DAPF-main` repository root** on the `robustness` branch, with the project Python environment activated. These commands consume **existing CSV results**: they do not retrain models, recompute Integrated Gradients, or re-run probes.
+
+### Model variants and saved results
+
+| Model | Saved five-seed interpretability root | Layer-wise representations |
+| --- | --- | --- |
+| DAPF-RoBERTa | `./output_roberta_interpretability` | CLS and supervised MASK |
+| RoBERTa-CLS | `./output_roberta_cls_interpretability_multiseed` | CLS only |
+| RoBERTa-CLS+Prompt | `./output_roberta_cls_prompt_interpretability_multiseed` | CLS and auxiliary MASK |
+
+For each model, seeds 0–4 contain `layerwise_probe_results.csv` either directly in the seed folder or under `layerwise_probing/`. DAPF layer-wise files use the column `score_mean`; the two CLS-based pipelines use `mean_score`. The plotting script supports both formats.
+
+### 1. Compare layer-wise representation probing
+
+```bash
+python -m interpretability.plot_roberta_layerwise_comparison \
+  --dapf-root ./output_roberta_interpretability \
+  --cls-root ./output_roberta_cls_interpretability_multiseed \
+  --prompt-root ./output_roberta_cls_prompt_interpretability_multiseed \
+  --out-dir ./output_roberta_comparison/figures
+```
+
+Key outputs, each as PNG and PDF:
+
+- `roberta_layerwise_cls_mask` — three panels: DAPF-RoBERTa (CLS/supervised MASK), plain RoBERTa-CLS (CLS), and RoBERTa-CLS+Prompt (CLS/auxiliary MASK).
+- `roberta_cls_across_models` — comparison of CLS probes in all three models.
+- `roberta_mask_minus_cls_by_layer` — paired MASK-minus-CLS macro-F1 within the two models that contain a MASK position.
+- `roberta_final_layer_probe_comparison` — all five available final-layer representations, including plain RoBERTa-CLS.
+- `roberta_dapf_layerwise_cls_mask`, `roberta_cls_layerwise_cls`, and `roberta_cls_prompt_layerwise_cls_mask` — per-model plots.
+
+The script also saves `roberta_layerwise_probe_by_seed.csv`, `roberta_layerwise_mean_sd.csv`, `roberta_mask_minus_cls_by_seed.csv`, `roberta_mask_minus_cls_mean_sd.csv`, and `roberta_final_layer_mean_sd.csv`.
+
+The probing curves are **mean logistic-regression cross-validated diagnosis macro-F1 across seeds 0–4**, with error bars indicating the **sample SD across the five seed-level means**. Probing measures label recoverability from frozen representations, **not the predictive accuracy of the model's trained classification head**.
+
+### 2. Compare DAPF-BERT and DAPF-RoBERTa token attribution directions
+
+```bash
+python -m interpretability.plot_dapf_attribution_comparison \
+  --bert-csv ./output_interpretability_multiseed_summary/attribution_aggregated/cross_seed_token_attribution_summary.csv \
+  --roberta-csv ./output_roberta_interpretability_summary/attribution_aggregated/cross_seed_token_attribution_summary.csv \
+  --out-dir ./output_roberta_comparison/figures
+```
+
+Key outputs (PNG/PDF):
+
+- `dapf_bert_roberta_ig_sign_scatter` — mean signed IG scores for shared normalized token types.
+- `dapf_ig_sign_agreement_thresholds` — sign agreement as the minimum absolute mean IG magnitude is increased in both models.
+
+The script also saves `dapf_ig_shared_tokens.csv` and `dapf_ig_sign_agreement_thresholds.csv`.
+
+Five-seed coverage filtering requires `n_seeds == 5`, `total_count >= 10`, and `mean_n_samples_per_seed >= 5` **within each backbone**. The observed overlap comprised **156** shared token types: **69 (44.2%)** agreed in mean attribution sign and **87 (55.8%)** disagreed. Agreement at minimum mean-attribution magnitudes 0, 0.005, 0.01, 0.02, and 0.05 was **44.2% (n=156), 45.2% (n=104), 45.8% (n=72), 50.0% (n=20), and 100.0% (n=2)**, respectively. The highest-threshold result is based on only two tokens.
+
+**Interpretation:** this is a descriptive cross-backbone attribution-sensitivity comparison, not a controlled clinical biomarker analysis. Tokenization, IG reference construction, and model objectives can differ. Attribution signs are relative to the respective model's dementia output and chosen reference.
+
+### 3. Compare overall RoBERTa deletion/insertion faithfulness
+
+```bash
+python -m interpretability.plot_roberta_faithfulness_comparison \
+  --dapf-root ./output_roberta_interpretability \
+  --cls-root ./output_roberta_cls_interpretability_multiseed \
+  --prompt-root ./output_roberta_cls_prompt_interpretability_multiseed \
+  --out-dir ./output_roberta_comparison/figures
+```
+
+Key outputs (PNG/PDF):
+
+- `roberta_faithfulness_positive_deletion`
+- `roberta_faithfulness_positive_insertion`
+- `roberta_faithfulness_absolute_deletion`
+- `roberta_faithfulness_absolute_insertion`
+
+Numeric outputs: `roberta_faithfulness_per_seed.csv` and `roberta_faithfulness_mean_sd.csv`.
+
+All effects refer to **dementia probability**, not predicted-class probability:
+
+- **Deletion:** `P(dementia, original) − P(dementia, perturbed)`.
+- **Insertion:** `P(dementia, restored) − P(dementia, masked baseline)`.
+
+A positive value means the change is in the expected direction for a token selected as positively contributing to the dementia output; a negative value means the reverse. Absolute-IG ranking combines positive and negative contributions and should not be interpreted as a directional test in the same way. Report five-seed means ± sample SD, acknowledging that the same 48 participants are reused across seeds.
+
+### 4. Stratify positive-IG faithfulness by true diagnosis
+
+```bash
+python -m interpretability.plot_roberta_faithfulness_by_diagnosis \
+  --dapf-root ./output_roberta_interpretability \
+  --cls-root ./output_roberta_cls_interpretability_multiseed \
+  --prompt-root ./output_roberta_cls_prompt_interpretability_multiseed \
+  --out-dir ./output_roberta_comparison/figures \
+  --ranking positive
+```
+
+Key outputs (PNG/PDF):
+
+- `roberta_faithfulness_positive_by_diagnosis` — four-panel figure with healthy-control and dementia groups, each showing deletion and insertion effects.
+
+Numeric outputs:
+
+- `roberta_faithfulness_diagnosis_seed_means.csv`
+- `roberta_faithfulness_diagnosis_mean_sd.csv`
+- `roberta_faithfulness_intervention_counts.csv`
+
+Diagnosis labels are `0 = healthy control`, `1 = dementia`. Each seed's effect is first averaged across the **24 participants** in each diagnosis group, then averaged across five seeds; error bars are the **sample SD of five seed-level group means**, not SD across 120 independent observations.
+
+Observed mean signed effects at 50% requested perturbation:
+
+| Model | Healthy deletion | Dementia deletion | Healthy insertion | Dementia insertion |
+| --- | ---: | ---: | ---: | ---: |
+| DAPF-RoBERTa | -0.0129 | -0.0737 | -0.1083 | -0.0084 |
+| RoBERTa-CLS | -0.0078 | -0.0327 | +0.0031 | +0.0068 |
+| RoBERTa-CLS+Prompt | -0.0040 | -0.0091 | +0.0014 | +0.0101 |
+
+**Intervention-count comparability caveat:** fractions are defined relative to each pipeline's available/ranked token positions, so the requested 20% or 50% need not correspond to an equal number of perturbed tokens across architectures. Inspect `roberta_faithfulness_intervention_counts.csv` alongside plots before interpreting model-to-model effect magnitudes. Perturbation also produces potentially out-of-distribution inputs. These curves demonstrate sensitivity under the specified intervention, not validated clinical explanations.
+
+### Figure selection for reports
+
+Suggested main-text figures: `roberta_layerwise_cls_mask`, `roberta_mask_minus_cls_by_layer`, `dapf_bert_roberta_ig_sign_scatter`, and `roberta_faithfulness_positive_by_diagnosis`. Suggested appendix figures: `dapf_ig_sign_agreement_thresholds`, `roberta_faithfulness_absolute_deletion`, `roberta_faithfulness_absolute_insertion`, and `roberta_cls_across_models`. The three-model final-layer bar chart can substitute for, rather than duplicate, parts of the layer-wise results.
+
+All plotting commands save figures to `./output_roberta_comparison/figures/` as `.png` and `.pdf`. The plot scripts belong in `interpretability/` (Python); `scripts/` is reserved for shell scripts in this project.
