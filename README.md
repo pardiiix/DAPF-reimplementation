@@ -630,3 +630,18 @@ nohup python -u prompt_finetune.py \
   --shap_output_dir "output_multiseed/seed_0/partition_shap_final" \
   > output/partition_shap_full_seed0.log 2>&1 &
 ```
+
+<!-- STUDY2_AUDIT_START -->
+## Study 2a DAPF-RoBERTa run record
+
+Original DAPF prompt learning with `roberta-base` in CCC -> ADReSS;
+manual template 7, manual verbalizer, meta=2, 10 epochs, batch size 4,
+class weights, seeds 0–4. Logged command uses `prompt_finetune.py`,
+`--src_data ccc_train_all`, `--trg_data adress-train_all`,
+`--trg_test_data adress-test_all`, `--model roberta`, and
+`--model_name roberta-base`. Five-seed means: accuracy **0.7583**,
+macro-F1 **0.7555**, AUROC **0.8313**, ECE **0.1971**.
+
+Cross-backbone figures are documented on `robustness`; inferential results on
+`paired-error-analysis`. Existing BERT instructions above remain historical.
+<!-- STUDY2_AUDIT_END -->
