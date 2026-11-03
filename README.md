@@ -588,3 +588,15 @@ python -m baselines.run_attribution_aggregated_exclude_tokens \
   --loose_min_count 5 \
   --loose_min_samples 3
   ```
+
+<!-- STUDY2_AUDIT_START -->
+## Study 2a RoBERTa-CLS+Prompt run record
+
+RoBERTa sequence classifier with the DAPF-style prompt as input (not DAPF's
+masked-token prediction head). Pooled CCC + ADReSS training, ADReSS test,
+`roberta-base`, template `dapf_template7`, 10 epochs, seeds 0–4.
+Recorded launcher: `bash scripts/run_roberta_cls_prompt_multiseed_training.sh`;
+outputs: `output_roberta_cls_prompt_multiseed/seed_{SEED}`.
+Five-seed mean macro-F1 **0.788339**. For six-model significance comparisons
+see `paired-error-analysis`; for plots see `robustness`.
+<!-- STUDY2_AUDIT_END -->
