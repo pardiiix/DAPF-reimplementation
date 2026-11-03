@@ -572,3 +572,16 @@ Run:
 ```bash
 chmod +x scripts/run_bert_cls_multiseed_full_pipeline.sh
 bash scripts/run_bert_cls_multiseed_full_pipeline.sh
+```
+
+<!-- STUDY2_AUDIT_START -->
+## Study 2a RoBERTa-CLS run record
+
+Pooled CCC + ADReSS training with ADReSS test, `roberta-base`, seeds 0–4,
+10 epochs, batch size 4, learning rate 1e-5, max length 512, class weights.
+Training entry point: `python -m baselines.train_bert_cls`; output:
+`output_roberta_cls_multiseed/seed_{SEED}`. Five-seed mean accuracy **0.7792**,
+macro-F1 **0.7736**, AUROC **0.8993**, ECE **0.2183**.
+
+See `robustness` for plots and `paired-error-analysis` for significance tests.
+<!-- STUDY2_AUDIT_END -->
