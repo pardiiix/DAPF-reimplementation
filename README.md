@@ -630,3 +630,19 @@ nohup python -u prompt_finetune.py \
   --shap_output_dir "output_multiseed/seed_0/partition_shap_final" \
   > output/partition_shap_full_seed0.log 2>&1 &
 ```
+
+<!-- STUDY2_AUDIT_START -->
+## Study 2 documentation and Study 2b setup
+
+This branch retains the BERT multiseed interpretability implementation. Study 2a
+compares BERT and RoBERTa on CCC -> ADReSS (seeds 0–4); the newer post-hoc
+significance scripts and results live on `paired-error-analysis`, while
+`robustness` documents cross-backbone visualizations and faithfulness.
+
+**Study 2b (planned):** preserve DAPF BERT training code and change dataset
+arguments only: `--src_data pitt_single_utt`,
+`--trg_data participant_all_ccc_transcript_cut`, `--crossvalidation True`,
+`--val_file_dir latest_tmp_dir/five_fold.json`, `--val_fold_idx 0..4`.
+Use original checkpoint selection and a distinct output directory. No new
+validation algorithm or model change is proposed.
+<!-- STUDY2_AUDIT_END -->
