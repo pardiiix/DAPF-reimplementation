@@ -599,3 +599,61 @@ python -m baselines.run_paired_error_analysis_three_models \
   --b cls_hidden_states \
   --output_dir ./table6_probing_significance
   ```
+
+<!-- STUDY2_AUDIT_START -->
+## Study 2a — BERT versus RoBERTa significance (October 2026)
+
+Setting: CCC -> ADReSS, 48 test participants, five seeds (0–4), six trained models.
+These are **post-hoc analyses** of saved predictions/representations; they do not
+change the original DAPF training, checkpointing, or test protocol.
+
+### Performance significance
+
+```bash
+python analysis/run_study2_performance_significance.py \
+  --output_dir significance_results/study2/performance
+```
+
+Five-seed mean macro-F1: DAPF-BERT **0.828655**; DAPF-RoBERTa **0.755527**;
+BERT-CLS **0.806258**; BERT-CLS+Prompt **0.806522**; RoBERTa-CLS **0.773643**;
+RoBERTa-CLS+Prompt **0.788339**.
+
+Two-sided participant-paired permutation results (difference = model A − model B):
+
+| Model A vs model B | Delta macro-F1 | Raw p | Holm p | Paired bootstrap 95% CI |
+|---|---:|---:|---:|---|
+| DAPF-BERT vs DAPF-RoBERTa | +0.073128 | 0.110389 | 0.551945 | [-0.028927, 0.183229] |
+| DAPF-RoBERTa vs RoBERTa-CLS | -0.018116 | 0.722928 | 1.000000 | [-0.124236, 0.089168] |
+| DAPF-RoBERTa vs RoBERTa-CLS+Prompt | -0.032812 | 0.542246 | 1.000000 | [-0.161064, 0.102942] |
+| BERT-CLS vs RoBERTa-CLS | +0.032615 | 0.196880 | 0.787521 | [-0.041117, 0.112774] |
+| BERT-CLS+Prompt vs RoBERTa-CLS+Prompt | +0.018182 | 0.522448 | 1.000000 | [-0.059314, 0.115892] |
+
+Participant predictions across the five seeds are paired, rather than treated
+as independent test cases. Holm adjustment covers five planned contrasts.
+None reached p < 0.05 after adjustment.
+
+### Representation significance
+
+```bash
+python analysis/run_study2_representation_significance.py
+```
+
+Outputs: `study2_significance/representation_seed_level/`. Exact two-sided
+paired sign-flip test over five seeds (32 assignments), Holm-adjusted across
+three planned contrasts:
+
+| Contrast | Mean probing macro-F1 difference | Raw p | Holm p |
+|---|---:|---:|---:|
+| BERT [MASK] − [CLS] | +0.04392 | 0.0625 | 0.1875 |
+| RoBERTa <mask> − <s> | -0.03057 | 0.1875 | 0.1875 |
+| BERT gap − RoBERTa gap | +0.07449 | 0.0625 | 0.1875 |
+
+Five seeds limit the smallest exact two-sided p-value to 0.0625. Seed-based
+confidence intervals are exploratory. Also note the original DAPF and baseline
+checkpoint-selection criteria differ; do not describe this as a causal backbone test.
+
+**Study 2b (planned):** BERT-only DementiaBank (`pitt_single_utt`) -> CCC
+(`participant_all_ccc_transcript_cut`) with DAPF's original five-fold CCC
+cross-validation. Keep new outputs separate; do not assume Study 2a significance
+scripts work unchanged on Study 2b.
+<!-- STUDY2_AUDIT_END -->
