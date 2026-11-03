@@ -673,3 +673,18 @@ Observed mean signed effects at 50% requested perturbation:
 Suggested main-text figures: `roberta_layerwise_cls_mask`, `roberta_mask_minus_cls_by_layer`, `dapf_bert_roberta_ig_sign_scatter`, and `roberta_faithfulness_positive_by_diagnosis`. Suggested appendix figures: `dapf_ig_sign_agreement_thresholds`, `roberta_faithfulness_absolute_deletion`, `roberta_faithfulness_absolute_insertion`, and `roberta_cls_across_models`. The three-model final-layer bar chart can substitute for, rather than duplicate, parts of the layer-wise results.
 
 All plotting commands save figures to `./output_roberta_comparison/figures/` as `.png` and `.pdf`. The plot scripts belong in `interpretability/` (Python); `scripts/` is reserved for shell scripts in this project.
+
+<!-- STUDY2_AUDIT_START -->
+## Study 2a inferential tests (cross-reference)
+
+The RoBERTa comparisons above are descriptive. The newer significance tests
+are documented on `paired-error-analysis`:
+`analysis/run_study2_performance_significance.py` and
+`analysis/run_study2_representation_significance.py`.
+
+Recorded DAPF-BERT minus DAPF-RoBERTa macro-F1: +0.073128
+(participant-paired permutation p=0.110389; Holm p=0.551945).
+Backbone-by-representation interaction: +0.07449
+(exact sign-flip p=0.0625; Holm p=0.1875). Neither establishes significance
+after multiplicity adjustment. Study 2b is a separate BERT-only DB -> CCC plan.
+<!-- STUDY2_AUDIT_END -->
