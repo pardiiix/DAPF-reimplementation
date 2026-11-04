@@ -2252,6 +2252,17 @@ if do_training:
 elif not do_training:
     logger.warning("No training will be performed!")
 
+    if args.crossvalidation:
+        trg_validation_data_loader = PromptDataLoader(
+            dataset=trg_dataset["validation"],
+            tokenizer=tokenizer,
+            template=mytemplate,
+            tokenizer_wrapper_class=WrapperClass,
+            max_seq_length=max_seq_l,
+            decoder_max_length=3,
+            batch_size=args.batch_size,
+        )
+
 # run on test set if desired
 
 if args.run_evaluation:
