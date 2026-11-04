@@ -1854,3 +1854,81 @@ for name, shap_path, ig_path in comparisons:
 print("\nPASS: Descriptive SHAP–IG comparison complete.")
 PY
 ```
+
+
+
+## N-gram Attribution Analysis
+
+We examine unigram, bigram, and trigram attribution patterns
+across Papers 1, 2a, and 2b using `ngram_attributions.py`.
+
+The analysis reconstructs words from subword tokens and
+aggregates existing attribution scores without retraining models.
+
+For each n-gram, scores are averaged within participants,
+within seeds, and then across seeds.
+
+We report attribution direction, magnitude, frequency,
+participant coverage, and diagnosis-group prevalence.
+
+This analysis is descriptive and does not estimate
+interaction effects between words.
+
+Results are saved in `output_ngram_analysis/`.
+For cross-dataset evaluation:
+
+```
+
+cd "/Users/pardisranjbar/Desktop/Dementia Detection/projects/final/DAPF-main"
+source .venv/bin/activate
+
+set -e
+
+echo "=== PAPER 1: DAPF-BERT ==="
+
+python -m interpretability.ngram_attributions \
+  --study paper1 \
+  --backbone bert \
+  --method ig \
+  --inputs "./output_interpretability_multiseed/seed_*/integrated_gradients_token_attributions_clean.csv" \
+  --output-dir "./output_ngram_analysis/paper1_dapf_bert_ig_v2" \
+  --min-count 10 \
+  --min-participants 5 \
+  --min-seeds 5 \
+  --top 30
+
+
+echo "=== PAPER 2a: DAPF-RoBERTa ==="
+
+python -m interpretability.ngram_attributions \
+  --study paper2a \
+  --backbone roberta \
+  --method ig \
+  --inputs "./output_roberta_interpretability/seed_*/attribution/integrated_gradients_token_attributions_clean.csv" \
+  --output-dir "./output_ngram_analysis/paper2a_dapf_roberta_ig_v2" \
+  --min-count 10 \
+  --min-participants 5 \
+  --min-seeds 5 \
+  --top 30
+
+
+echo "=== PAPER 2b: DAPF-BERT ==="
+
+python -m interpretability.ngram_attributions \
+  --study paper2b \
+  --backbone bert \
+  --method ig \
+  --inputs "./output_interpretability_paper2b/bert/pitt105_to_ccc105/fold_*/seed_*/integrated_gradients_scaffold_filtered/integrated_gradients_token_attributions_clean.csv" \
+  --output-dir "./output_ngram_analysis/paper2b_dapf_bert_ig_v2" \
+  --min-count 10 \
+  --min-participants 5 \
+  --min-seeds 5 \
+  --top 30
+
+echo "ALL THREE N-GRAM ANALYSES COMPLETE"
+```
+
+Run interviewee-only n-gram aggregation
+```
+python -m interpretability.ccc_interviewee_ngrams
+```
