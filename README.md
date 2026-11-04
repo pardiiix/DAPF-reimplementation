@@ -646,3 +646,103 @@ arguments only: `--src_data pitt_single_utt`,
 Use original checkpoint selection and a distinct output directory. No new
 validation algorithm or model change is proposed.
 <!-- STUDY2_AUDIT_END -->
+
+
+```
+BASE="./output/paper2b_pitt477_ccc105"
+mkdir -p "$BASE"
+
+# Verify the full Pitt dataset and CCC folds exist
+test -f ./data/pitt/pitt.csv || { echo "Full Pitt CSV missing"; exit 1; }
+test -f ./data/ccc_train_all.csv || exit 1
+test -f ./latest_tmp_dir/five_fold_ccc105.json || exit 1
+
+if [ -e "$BASE/launcher.log" ]; then
+  echo "Existing launcher log found. Refusing to overwrite."
+else
+
+nohup caffeinate -i bash -c '
+set -euo pipefail
+
+test "$(git branch --show-current)" = "multiseed-interpretability"
+
+BASE="./output/paper2b_pitt477_ccc105"
+
+# Prevent overwriting existing runs
+for FOLD in 0 1 2 3 4; do
+  for SEED in 0 1 2 3 4; do
+    RUN_DIR="$BASE/fold_${FOLD}/seed_${SEED}"
+
+    if [ -e "$RUN_DIR" ]; then
+      echo "Existing run: $RUN_DIR"
+      exit 1
+    fi
+  done
+done
+
+for FOLD in 0 1 2 3 4; do
+  for SEED in 0 1 2 3 4; do
+
+    RUN_DIR="$BASE/fold_${FOLD}/seed_${SEED}"
+    mkdir -p "$RUN_DIR"
+
+    echo "======================================"
+    echo "Paper 2b FULL PITT: Fold $FOLD, Seed $SEED"
+    echo "======================================"
+
+    .venv/bin/python -u prompt_finetune.py \
+      --project_root ./ \
+      --logs_root "$RUN_DIR/" \
+      --off_line_model_dir ./model/bert-base-uncased \
+      --data_dir ./data/ \
+      --src_data pitt/pitt \
+      --trg_data ccc_train_all \
+      --crossvalidation True \
+      --val_file_dir latest_tmp_dir/five_fold_ccc105.json \
+      --val_fold_idx "$FOLD" \
+      --model bert \
+      --model_name bert-base-uncased \
+      --template_type manual \
+      --verbalizer_type manual \
+      --template_id 7 \
+      --meta 2 \
+      --seed "$SEED" \
+      --gpu_num 0 \
+      --batch_size 4 \
+      --trg_batch_size 4 \
+      --num_epochs 10 \
+      --plm_lr 1e-5 \
+      --ce_class_weights \
+      --no_tensorboard \
+      --save_wrapped_inputs \
+      --save_hidden_states \
+      --save_attentions \
+      > "$RUN_DIR/train.log" 2>&1
+
+    CKPT=(find"RUN_DIR" -type f \
+      -name "best-checkpoint_cv1_fold${FOLD}.ckpt" \
+      -print -quit)
+
+    RESULTS=(find"RUN_DIR" -type f \
+      -path "*/epoch-1/test_results_cv1_fold${FOLD}.csv" \
+      -print -quit)
+
+    test -n "$CKPT" || { echo "Missing checkpoint"; exit 1; }
+    test -n "$RESULTS" || { echo "Missing predictions"; exit 1; }
+
+    echo "Completed fold $FOLD, seed $SEED"
+    echo "Checkpoint: $CKPT"
+    echo "Predictions: $RESULTS"
+
+  done
+done
+
+echo "ALL 25 FULL-PITT DAPF-BERT RUNS FINISHED"
+' > "$BASE/launcher.log" 2>&1 < /dev/null &
+
+echo !>"BASE/launcher.pid"
+echo "Training started. PID: (cat"BASE/launcher.pid")"
+
+fi
+
+```
